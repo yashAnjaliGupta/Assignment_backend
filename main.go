@@ -1,12 +1,13 @@
 package main
 
 import (
+	"os"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
-
+	"github.com/joho/godotenv"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -42,17 +43,26 @@ type JWTClaims struct {
 }
 
 // MongoDB configuration
-const (
-	mongoURI       = os.Getenv("MONGO_URI")
+// var mongoURL="mongodb+srv://yashguptayg318:"+os.Getenv("GJZYEnmAUr6S3Aa7")+"@cluster0.9tqqtyr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+var (
+	mongoURI string
 	dbName         = "sample_mflix"
 	collectionNameUsers = "Users"
 	collectionNameCandidateFeedbacks="CandidateFeedbacks"
-	secretKey      = os.Getenv("JWT_SECRET")
+	secretKey      string
 )
 
 var client *mongo.Client
 var userCollection *mongo.Collection
 var candidateFeedbackCollection *mongo.Collection
+
+func init() {
+    // Load environment variables from .env file
+    if err := godotenv.Load(); err != nil {
+        log.Fatalf("Error loading .env file: %v", err)
+    }
+}
 
 func initMongoDB() {
 	// Set client options
@@ -308,6 +318,8 @@ func GetCandidatesForUser(c *gin.Context) {
 }
 func main() {
 	// Initialize MongoDB connection
+	mongoURI = os.Getenv("MONGO_URI")
+	secretKey= os.Getenv("JWT_SECRET")
 	initMongoDB()
 
 	// Initialize Gin router
