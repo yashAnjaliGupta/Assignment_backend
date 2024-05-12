@@ -1,39 +1,40 @@
 package main
 
 import (
-	"os"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
-	"github.com/joho/godotenv"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"github.com/gin-contrib/cors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // User represents the structure of a user in the database
 type User struct {
-	ID       string    `bson:"_id,omitempty"`
-	Username string    `bson:"username"`
-	Password string    `bson:"password"`
+	ID        string    `bson:"_id,omitempty"`
+	Username  string    `bson:"username"`
+	Password  string    `bson:"password"`
 	CreatedAt time.Time `bson:"createdAt"`
 }
 
 type Candidates struct {
-	ID		string    `bson:"_id,omitempty"`
-	Candidatename  string    `bson:"name"`
-	InterviewStatus bool   `bson:"InterviewStatus"`
-	InterviewFeedback string `bson:"InetrviewFeedback"`
-	InterviewRating int `bson:"InterviewRating"`
-	User string `bson:"Username"`
-	CreatedAt time.Time `bson:"createdAt"`
+	ID                string    `bson:"_id,omitempty"`
+	Candidatename     string    `bson:"name"`
+	InterviewStatus   bool      `bson:"InterviewStatus"`
+	InterviewFeedback string    `bson:"InetrviewFeedback"`
+	InterviewRating   int       `bson:"InterviewRating"`
+	User              string    `bson:"Username"`
+	CreatedAt         time.Time `bson:"createdAt"`
 }
 
 // JWTClaims represents the claims included in the JWT token
@@ -46,11 +47,11 @@ type JWTClaims struct {
 // var mongoURL="mongodb+srv://yashguptayg318:"+os.Getenv("GJZYEnmAUr6S3Aa7")+"@cluster0.9tqqtyr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 var (
-	mongoURI string
-	dbName         = "sample_mflix"
-	collectionNameUsers = "Users"
-	collectionNameCandidateFeedbacks="CandidateFeedbacks"
-	secretKey      string
+	mongoURI                         string
+	dbName                           = "sample_mflix"
+	collectionNameUsers              = "Users"
+	collectionNameCandidateFeedbacks = "CandidateFeedbacks"
+	secretKey                        string
 )
 
 var client *mongo.Client
@@ -58,10 +59,10 @@ var userCollection *mongo.Collection
 var candidateFeedbackCollection *mongo.Collection
 
 func init() {
-    // Load environment variables from .env file
-    if err := godotenv.Load(); err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
-    }
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 }
 
 func initMongoDB() {
@@ -71,7 +72,7 @@ func initMongoDB() {
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
-	  panic(err)
+		panic(err)
 	}
 
 	// Check the connection
@@ -84,8 +85,9 @@ func initMongoDB() {
 
 	// Accessing a collection
 	userCollection = client.Database(dbName).Collection(collectionNameUsers)
-	candidateFeedbackCollection=client.Database(dbName).Collection(collectionNameCandidateFeedbacks)
+	candidateFeedbackCollection = client.Database(dbName).Collection(collectionNameCandidateFeedbacks)
 }
+
 // GenerateJWT generates a JWT token for the given user
 func GenerateJWT(user User) (string, error) {
 	claims := JWTClaims{
@@ -104,6 +106,7 @@ func GenerateJWT(user User) (string, error) {
 
 	return tokenString, nil
 }
+
 // SignUpHandler handles user registration (sign-up)
 func SignUpHandler(c *gin.Context) {
 	var user User
@@ -139,7 +142,6 @@ func SignUpHandler(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
-
 
 // SignInHandler handles user authentication (sign-in)
 func SignInHandler(c *gin.Context) {
@@ -178,7 +180,6 @@ func SignInHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
-
 
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -222,7 +223,7 @@ func AddCandidateHandler(c *gin.Context) {
 
 	// Set the creation timestamp
 	candidate.CreatedAt = time.Now()
-	candidate.User= c.GetString("username");
+	candidate.User = c.GetString("username")
 	// Insert the candidate into the MongoDB collection
 	insertResult, err := candidateFeedbackCollection.InsertOne(context.Background(), candidate)
 	if err != nil {
@@ -236,67 +237,67 @@ func AddCandidateHandler(c *gin.Context) {
 
 // UpdateCandidate handles updating an existing candidate
 func UpdateCandidateHandler(c *gin.Context) {
-    // Get candidate ID from URL parameter
-    candidateID := c.Param("id")
+	// Get candidate ID from URL parameter
+	candidateID := c.Param("id")
 
-    // Convert candidateID to ObjectID
-    objID, err := primitive.ObjectIDFromHex(candidateID)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
-        return
-    }
+	// Convert candidateID to ObjectID
+	objID, err := primitive.ObjectIDFromHex(candidateID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
+		return
+	}
 
-    // Bind JSON request body to Candidates struct
-    var candidate Candidates
-    if err := c.BindJSON(&candidate); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	// Bind JSON request body to Candidates struct
+	var candidate Candidates
+	if err := c.BindJSON(&candidate); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Update the candidate in the MongoDB collection
-    filter := bson.M{"_id": objID}
-    update := bson.M{
-        "$set": bson.M{
-            "name":             candidate.Candidatename,
-            "InterviewStatus":  candidate.InterviewStatus,
-            "InterviewFeedback": candidate.InterviewFeedback,
-            "InterviewRating":  candidate.InterviewRating,
-        },
-    }
+	// Update the candidate in the MongoDB collection
+	filter := bson.M{"_id": objID}
+	update := bson.M{
+		"$set": bson.M{
+			"name":              candidate.Candidatename,
+			"InterviewStatus":   candidate.InterviewStatus,
+			"InterviewFeedback": candidate.InterviewFeedback,
+			"InterviewRating":   candidate.InterviewRating,
+		},
+	}
 
-    _, err = candidateFeedbackCollection.UpdateOne(context.Background(), filter, update)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	_, err = candidateFeedbackCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"message": "Candidate updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Candidate updated successfully"})
 }
 
 func DeleteCandidateHandler(c *gin.Context) {
-    // Get candidate ID from URL parameter
-    candidateID := c.Param("id")
+	// Get candidate ID from URL parameter
+	candidateID := c.Param("id")
 
-    // Convert candidateID to ObjectID
-    objID, err := primitive.ObjectIDFromHex(candidateID)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
-        return
-    }
+	// Convert candidateID to ObjectID
+	objID, err := primitive.ObjectIDFromHex(candidateID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
+		return
+	}
 
-    // Delete the candidate from the MongoDB collection
-    filter := bson.M{"_id": objID}
-    _, err = candidateFeedbackCollection.DeleteOne(context.Background(), filter)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Delete the candidate from the MongoDB collection
+	filter := bson.M{"_id": objID}
+	_, err = candidateFeedbackCollection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"message": "Candidate deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Candidate deleted successfully"})
 }
 func GetCandidatesForUser(c *gin.Context) {
 	// Get user ID from URL parameter
-	user:=c.GetString("username");
+	user := c.GetString("username")
 
 	// Query the MongoDB collection for candidates belonging to the specified user
 	filter := bson.M{"Username": user}
@@ -319,25 +320,27 @@ func GetCandidatesForUser(c *gin.Context) {
 func main() {
 	// Initialize MongoDB connection
 	mongoURI = os.Getenv("MONGO_URI")
-	secretKey= os.Getenv("JWT_SECRET")
+	secretKey = os.Getenv("JWT_SECRET")
 	initMongoDB()
 
 	// Initialize Gin router
 	router := gin.Default()
 	// Configure CORS middleware
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"} // Allow all origins (change as needed)
+	config.AllowOrigins = []string{"*"}                            // Allow all origins (change as needed)
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"} // Allow specified HTTP methods
+	config.AllowHeaders = []string{"*"}
 	router.Use(cors.New(config))
+
 	// Define routes
 	router.POST("/signup", SignUpHandler)
 	router.POST("/signin", SignInHandler)
-	router.POST("/addcandidate",JWTMiddleware(),AddCandidateHandler)
-	router.DELETE("/candidates/:id",JWTMiddleware(),DeleteCandidateHandler)
-	router.PUT("/candidates/:id",JWTMiddleware(),UpdateCandidateHandler)
-	router.GET("/candidates",JWTMiddleware(),GetCandidatesForUser)
-	router.GET("/",JWTMiddleware(),func(c *gin.Context){
-		c.JSON(http.StatusOK, gin.H{"message":"middleware worked","user":c.GetString("username")})
+	router.POST("/addcandidate", JWTMiddleware(), AddCandidateHandler)
+	router.DELETE("/candidates/:id", JWTMiddleware(), DeleteCandidateHandler)
+	router.PUT("/candidates/:id", JWTMiddleware(), UpdateCandidateHandler)
+	router.GET("/candidates", JWTMiddleware(), GetCandidatesForUser)
+	router.GET("/", JWTMiddleware(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "middleware worked", "user": c.GetString("username")})
 	})
 	// Start the server
 	fmt.Println("Server listening on port 8080...")
